@@ -1,0 +1,6 @@
+alias qclogin="ssh pranavb@pranavb-linux"
+alias enw="emacs -nw"
+parse_git_branch() {
+    git branch 2>/dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\[\1\]/'
+}
+PS1='\[\033[36m\]`uname -n`:\[\033[1;39m\]\[\033[32m\]\w:\[\033[35m\]$(parse_git_branch)\[\033[0m\][\A \d]>'
