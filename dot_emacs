@@ -1,46 +1,54 @@
-(keyboard-translate ?\C-h ?\C-?) 
+(require 'package)
+(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
+(package-initialize)
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(custom-enabled-themes (quote (tango-dark))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
-;; LLVM coding style guidelines in emacs
-;; Maintainer: LLVM Team, http://llvm.org/
+(setq package-selected-packages '(lsp-mode yasnippet lsp-treemacs helm-lsp
+    projectile hydra flycheck company avy which-key helm-xref dap-mode))
 
-(defun llvm-lineup-statement (langelem)
-  (let ((in-assign (c-lineup-assignments langelem)))
-    (if (not in-assign)
-        '++
-      (aset in-assign 0
-            (+ (aref in-assign 0)
-               (* 2 c-basic-offset)))
-      in-assign)))
+(when (cl-find-if-not #'package-installed-p package-selected-packages)
+  (package-refresh-contents)
+  (mapc #'package-install package-selected-packages))
 
-;; Add a cc-mode style for editing LLVM C and C++ code
-(c-add-style "llvm.org"
-             '("gnu"
-	       (fill-column . 80)
-	       (c++-indent-level . 2)
-	       (c-basic-offset . 2)
-	       (indent-tabs-mode . nil)
-	       (c-offsets-alist . ((arglist-intro . ++)
-				   (innamespace . 0)
-				   (member-init-intro . ++)
-				   (statement-cont . llvm-lineup-statement)))))
+;; sample `helm' configuration use https://github.com/emacs-helm/helm/ for details
+(helm-mode)
+(require 'helm-xref)
+(define-key global-map [remap find-file] #'helm-find-files)
+(define-key global-map [remap execute-extended-command] #'helm-M-x)
+(define-key global-map [remap switch-to-buffer] #'helm-mini)
 
-;; Files with "llvm" in their names will automatically be set to the
-;; llvm.org coding style.
-(add-hook 'c-mode-common-hook
-	  (function
-	   (lambda nil 
-	     (if (string-match "llvm" buffer-file-name)
-		 (progn
-		   (c-set-style "llvm.org"))))))
+(which-key-mode)
+(add-hook 'c-mode-hook 'lsp)
+(add-hook 'c++-mode-hook 'lsp)
+(add-hook 'c++-mode-hook #'yas-minor-mode)
+(add-hook 'c++-mode-hook 'show-paren-mode)
+(add-hook 'c-mode-hook 'show-paren-mode)
+
+(setq gc-cons-threshold (* 100 1024 1024)
+      read-process-output-max (* 1024 1024)
+      treemacs-space-between-root-nodes nil
+      company-idle-delay 0.0
+      company-minimum-prefix-length 1
+      lsp-idle-delay 0.1)  ;; clangd is fast
+
+(with-eval-after-load 'lsp-mode
+  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration)
+;  (require 'dap-cpptools)
+  (yas-global-mode))
+(setq yas-snippet-dirs '("~/.emacs.d/mysnippets"
+			 "~/.emacs.d/snippets"))
+
+(load "$HOME/git/bhandarkar-pranav/llvm-project/llvm/utils/emacs/emacs.el")
+(setq load-path
+      (cons (expand-file-name "$HOME/git/bhandarkar-pranav/llvm-project/llvm/utils/emacs") load-path))
+(require 'llvm-mode)
+(require 'tablegen-mode)
+;(require 'llvm-mir-mode)
+;; for some reason the above require is just not working, so brute-force load llvm-mir-mode.el
+(load "$HOME/git/bhandarkar-pranav/llvm-project/llvm/utils/emacs/llvm-mir-mode.el")
+(setq load-path
+      (cons (expand-file-name "/work/prbhanda/git/bhandarkar-pranav/llvm-project/mlir/utils/emacs") load-path))
+(require 'mlir-mode)
+
+;ediff set up
+
+(setq ediff-window-setup-function 'ediff-setup-windows-plain)
